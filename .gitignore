@@ -1,0 +1,22 @@
+# Ambiente Virtual (NUNCA mande isso para o GitHub)
+venv/
+env/
+ENV/
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Banco de dados local (SQLite)
+*.sqlite3
+*.db
+instance/
+
+# Pastas de configuração do VS Code
+.vscode/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db

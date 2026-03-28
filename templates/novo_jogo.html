@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Escolha o Modo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="modo-container">
+        <h2>Escolha o Modo de Jogo</h2>
+        
+        <div class="cards-grid">
+            <div class="card">
+                <h3>Jogo Original</h3>
+                <p>Nesse modo serão utilizados os times atualizados com os jogadores originais.</p>
+                <a href="{{ url_for('modo_original') }}" class="btn-select">Selecionar</a>
+            </div>
+
+            <div class="card">
+                <h3>Montar seu Time</h3>
+                <p>Nesse modo você vai escolher um time base e os players escolhem alguns jogadores de outros times.</p>
+                <a href="#" class="btn-select">Selecionar</a>
+            </div>
+        </div>
+
+        <br>
+        <a href="{{ url_for('index') }}" class="link-voltar">⬅ Voltar para o início</a>
+    </div>
+</body>
+</html>

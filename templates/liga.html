@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ torneio }} - FIFA Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 10px 20px;
+        }
+
+        .tab-btn.active {
+            color: #edb112;
+            border-bottom: 2px solid #edb112;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Estilo dos Jogos */
+        .jogo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #161b22;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            gap: 20px;
+        }
+
+        .time-box {
+            text-align: center;
+            width: 200px;
+        }
+
+        .time-nome {
+            font-size: 1.2em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .player-nome {
+            font-size: 0.8em;
+            color: #8b949e;
+        }
+
+        .placar-input {
+            width: 50px;
+            text-align: center;
+            font-size: 1.5em;
+            background: #0d1117;
+            border: 1px solid #edb112;
+            color: white;
+            border-radius: 5px;
+        }
+
+        /* Estilo Classificação */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #30363d;
+            text-align: center;
+        }
+
+        th {
+            background: #1f2937;
+            color: #edb112;
+        }
+
+        .campeao-alert {
+            background: #238636;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <div id="msg_campeao" class="campeao-alert"></div>
+        <h1>{{ torneio }}</h1>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="abrirAba('jogos')">JOGOS</button>
+            <button class="tab-btn" onclick="abrirAba('classificacao')">CLASSIFICAÇÃO</button>
+        </div>
+
+        <div id="aba_jogos">
+            {% for jogo in jogos %}
+            <div class="jogo-row">
+                <div class="time-box">
+                    <span class="time-nome">{{ jogo.home.time }}</span>
+                    <span class="player-nome">({{ jogo.home.nome }})</span>
+                </div>
+                <input type="number" class="placar-input home-score" data-player="{{ jogo.home.nome }}"
+                    oninput="atualizarTabela()">
+                <span>X</span>
+                <input type="number" class="placar-input away-score" data-player="{{ jogo.away.nome }}"
+                    oninput="atualizarTabela()">
+                <div class="time-box">
+                    <span class="time-nome">{{ jogo.away.time }}</span>
+                    <span class="player-nome">({{ jogo.away.nome }})</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="aba_classificacao" class="hidden">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Player (Time)</th>
+                        <th>P</th>
+                        <th>J</th>
+                        <th>V</th>
+                        <th>E</th>
+                        <th>D</th>
+                        <th>GP</th>
+                        <th>GC</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela_body">
+                </tbody>
+            </table>
+        </div>
+        <div class="actions-container" style="margin-top: 20px; display: flex; gap: 10px;">
+            <button type="button" class="btn" onclick="salvarTorneio(false)"
+                style="background: #1f2937; border: 1px solid #fdfdfc;">
+                💾 Salvar Progresso
+            </button>
+            <button id="btn_finalizar" type="button" class="btn" onclick="salvarTorneio(true)"
+                style="background: #fafaf9; color: #050a30; display: none;">
+                🏁 Finalizar Torneio
+            </button>
+        </div>
+        <div style="margin-top: 30px;">
+            <a href="{{ url_for('index') }}" class="btn-voltar">⬅ Sair do Torneio</a>
+        </div>
+    </div>
+
+    <script>
+        // Dados iniciais dos players passados pelo Python
+        const playersData = JSON.parse('{{ players | tojson | safe }}');
+
+        function abrirAba(nomeAba) {
+            // Esconde/Mostra as divs
+            document.getElementById('aba_jogos').classList.toggle('hidden', nomeAba !== 'jogos');
+            document.getElementById('aba_classificacao').classList.toggle('hidden', nomeAba !== 'classificacao');
+
+            // Atualiza a aparência dos botões
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                // Verifica se o clique foi na aba correspondente (compara ignorando maiúsculas/minúsculas)
+                if (btn.innerText.trim().toLowerCase().includes(nomeAba)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function atualizarTabela() {
+            let stats = {};
+            playersData.forEach(p => {
+                stats[p.nome] = { nome: p.nome, time: p.time, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+            });
+
+            const rows = document.querySelectorAll('.jogo-row');
+            let jogosPreenchidos = 0;
+
+            rows.forEach(row => {
+                const hScore = row.querySelector('.home-score').value;
+                const aScore = row.querySelector('.away-score').value;
+                const hPlayer = row.querySelector('.home-score').dataset.player;
+                const aPlayer = row.querySelector('.away-score').dataset.player;
+
+                if (hScore !== "" && aScore !== "") {
+                    jogosPreenchidos++;
+                    const hs = parseInt(hScore);
+                    const as = parseInt(aScore);
+
+                    stats[hPlayer].j++; stats[aPlayer].j++;
+                    stats[hPlayer].gp += hs; stats[hPlayer].gc += as;
+                    stats[aPlayer].gp += as; stats[aPlayer].gc += hs;
+
+                    if (hs > as) { stats[hPlayer].pts += 3; stats[hPlayer].v++; stats[aPlayer].d++; }
+                    else if (hs < as) { stats[aPlayer].pts += 3; stats[aPlayer].v++; stats[hPlayer].d++; }
+                    else { stats[hPlayer].pts += 2; stats[aPlayer].pts += 2; stats[hPlayer].e++; stats[aPlayer].e++; }
+                }
+            });
+
+            // Ordenação: Pontos > Vitórias > Gols Feitos > Gols Tomados (menor)
+            let ranking = Object.values(stats).sort((a, b) => {
+                return b.pts - a.pts || b.v - a.v || b.gp - a.gp || a.gc - b.gc;
+            });
+
+            // Renderizar Tabela
+            const tbody = document.getElementById('tabela_body');
+            tbody.innerHTML = '';
+            ranking.forEach((p, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${i + 1}º</td>
+                        <td>${p.time} <br><small>(${p.nome})</small></td>
+                        <td><strong>${p.pts}</strong></td>
+                        <td>${p.j}</td>
+                        <td>${p.v}</td>
+                        <td>${p.e}</td>
+                        <td>${p.d}</td>
+                        <td>${p.gp}</td>
+                        <td>${p.gc}</td>
+                    </tr>
+                `;
+            });
+
+            // Verificar Campeão
+            const msg = document.getElementById('msg_campeao');
+            const btnFinalizar = document.getElementById('btn_finalizar'); // Pega o botão
+
+            if (jogosPreenchidos === rows.length && rows.length > 0) {
+                msg.innerHTML = `🏆 O CAMPEÃO É: <strong>${ranking[0].time} (${ranking[0].nome})</strong>!`;
+                msg.style.display = 'block';
+                btnFinalizar.style.display = 'block'; // MOSTRA o botão finalizar
+            } else {
+                msg.style.display = 'none';
+                btnFinalizar.style.display = 'none'; // ESCONDE se faltar jogo
+            }
+        }
+        function salvarTorneio(finalizar) {
+            const nomeTorneio = "{{ torneio }}";
+            const rows = document.querySelectorAll('.jogo-row');
+
+            // Pegar o ranking atual para saber quem é o campeão
+            // (A lógica de ordenação aqui deve ser a mesma da atualizarTabela)
+            let stats = {};
+            playersData.forEach(p => { stats[p.nome] = { nome: p.nome, time: p.time, pts: 0 }; });
+            // ... (lógica simplificada para pegar o líder atual)
+
+            const dadosParaSalvar = {
+                torneio: nomeTorneio,
+                finalizado: finalizar,
+                // Aqui você enviaria os placares e o ranking para o banco de dados futuramente
+            };
+
+            console.log("Dados enviados:", dadosParaSalvar);
+
+            if (finalizar) {
+                alert("Torneio Finalizado! O campeão foi registrado no histórico.");
+                window.location.href = "{{ url_for('index') }}"; // Volta para o início
+            } else {
+                alert("Progresso salvo com sucesso!");
+            }
+        }
+
+        window.onload = atualizarTabela;
+    </script>
+</body>
+
+</html>

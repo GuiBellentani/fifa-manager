@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Configurar Torneio Original</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .form-section {
+            background: #161b22;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #30363d;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .player-card {
+            background: #1f2937;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #30363d;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .format-selection {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: #0d1117;
+            border-radius: 5px;
+        }
+
+        .btn-start {
+            background: #fbfcfb;
+            color: rgb(0, 0, 0);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn-start:hover {
+            background: #2e98a0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Configuração do Torneio</h1>
+
+        <form class="form-section" action="{{ url_for('iniciar_torneio') }}" method="POST">
+
+            <label>Nome do Torneio:</label>
+            <input type="text" name="nome_torneio" placeholder="Ex: Champions League da Galera" required>
+
+            <label style="margin-top: 15px; display: block;">Quantidade de Jogadores (2-12):</label>
+            <select id="qtd_players" name="qtd_players" onchange="gerarCampos()">
+                {% for i in range(2, 13) %}
+                <option value="{{ i }}">{{ i }} Jogadores</option>
+                {% endfor %}
+            </select>
+
+            <div id="players_container" class="players-grid"></div>
+
+            <label style="margin-top: 20px; display: block;">Formato do Torneio:</label>
+            <div class="format-selection">
+                <label><input type="radio" name="formato" value="liga_ida" checked> Liga (Só Ida)</label>
+                <label><input type="radio" name="formato" value="liga_ida_volta"> Liga (Ida e Volta)</label>
+                <label><input type="radio" name="formato" value="copa"> Copa (Mata-mata)</label>
+            </div>
+
+            <button type="submit" class="btn-start">INICIAR TORNEIO</button>
+            <a href="{{ url_for('index') }}" class="link-voltar" style="display:block; margin-top:15px;">⬅ Voltar ao
+                Início</a>
+        </form>
+    </div>
+
+    <script>
+        function gerarCampos() {
+            const container = document.getElementById('players_container');
+            const qtd = document.getElementById('qtd_players').value;
+            container.innerHTML = ''; // Limpa antes de gerar
+
+            for (let i = 1; i <= qtd; i++) {
+                container.innerHTML += `
+                    <div class="player-card">
+                        <strong>Player ${i}</strong>
+                        <input type="text" placeholder="Nome do Player" name="p${i}_nome" required>
+                        <input type="text" placeholder="Nome do Time" name="p${i}_time" required>
+                    </div>
+                `;
+            }
+        }
+        // Inicia com 2 campos por padrão
+        window.onload = gerarCampos;
+    </script>
+</body>
+
+</html>
