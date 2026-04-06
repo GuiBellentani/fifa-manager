@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Jogos Salvos - FIFA Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #30363d;
+            text-align: center;
+        }
+
+        th {
+            background: #1f2937;
+            color: #edb112;
+        }
+
+        .btn-continuar {
+            background: #238636;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .btn-continuar:hover {
+            background: #2ea043;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="max-width: 900px;">
+        <h1>📂 Torneios em Andamento</h1>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Torneio</th>
+                    <th>Participantes</th>
+                    <th>Data de Início</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in torneios %}
+                <tr>
+                    <td><strong>{{ t.nome }}</strong></td>
+                    <td>{{ t.qtd_participantes }} Players</td>
+                    <td>{{ t.data_inicio.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td style="display: flex; gap: 10px; justify-content: center;">
+                        <a href="{{ url_for('carregar_torneio', id=t.id) }}" class="btn-continuar">Continuar ➡</a>
+
+                        <form action="{{ url_for('excluir_torneio', id=t.id) }}" method="POST"
+                            onsubmit="return confirm('Tem certeza que deseja excluir?')">
+                            <button type="submit"
+                                style="background: #cf222e; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                Excluir 🗑
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="padding: 30px; color: #8b949e;">Nenhum jogo salvo encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px;">
+            <a href="{{ url_for('index') }}" class="btn-voltar">⬅ Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+
+</html>

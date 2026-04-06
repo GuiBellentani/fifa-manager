@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Campeões - FIFA Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+        th, td { padding: 15px; border-bottom: 1px solid #30363d; text-align: center; }
+        th { background: #1f2937; color: #edb112; }
+        .campeao-nome { color: #edb112; font-weight: bold; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <h1>🏆 Hall da Fama (Histórico)</h1>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Torneio</th>
+                    <th>Players</th>
+                    <th>Início</th>
+                    <th>Encerramento</th>
+                    <th>🏆 Campeão</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.nome }}</td>
+                    <td>{{ log.qtd_participantes }}</td>
+                    <td>{{ log.data_inicio.strftime('%d/%m/%Y') if log.data_inicio else '-' }}</td>
+                    <td>{{ log.data_fim.strftime('%d/%m/%Y') }}</td>
+                    <td class="campeao-nome">{{ log.campeao }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 30px; color: #8b949e;">Nenhum torneio finalizado ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px;">
+            <a href="{{ url_for('index') }}" class="btn-voltar">⬅ Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+</html>

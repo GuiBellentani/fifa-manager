@@ -10,9 +10,8 @@
         <h1>FIFA MANAGER</h1>
         <div class="options">
             <a href="{{ url_for('novo_jogo') }}" class="btn">Novo Jogo</a>
-            <a href="#" class="btn disabled">Continuar</a>
-            <a href="#" class="btn disabled">Excluir</a>
-            <a href="#" class="btn disabled">Histórico</a>
+            <a href="{{ url_for('jogos_salvos') }}" class="btn">Jogo Salvo</a>            
+            <a href="{{ url_for('historico') }}" class="btn">Histórico</a>
         </div>
     </div>
 </body>

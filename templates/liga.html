@@ -154,6 +154,7 @@
                 </tbody>
             </table>
         </div>
+
         <div class="actions-container" style="margin-top: 20px; display: flex; gap: 10px;">
             <button type="button" class="btn" onclick="salvarTorneio(false)"
                 style="background: #1f2937; border: 1px solid #fdfdfc;">
@@ -164,23 +165,31 @@
                 🏁 Finalizar Torneio
             </button>
         </div>
+
         <div style="margin-top: 30px;">
             <a href="{{ url_for('index') }}" class="btn-voltar">⬅ Sair do Torneio</a>
         </div>
     </div>
+    <div id="dados-torneio" 
+         data-players='{{ players | tojson | safe }}'
+         data-jogos='{{ jogos | tojson | safe }}'
+         data-carregado="{{ 'true' if carregado else 'false' }}">
+    </div>
 
     <script>
-        // Dados iniciais dos players passados pelo Python
-        const playersData = JSON.parse('{{ players | tojson | safe }}');
+       
+        // Agora o JavaScript lê da "caixa" acima e o VS Code não reclama de sintaxe!
+        const dadosElement = document.getElementById('dados-torneio');
+        
+        const playersData = JSON.parse(dadosElement.getAttribute('data-players'));
+        const jogosIniciais = JSON.parse(dadosElement.getAttribute('data-jogos'));
+        const carregado = dadosElement.getAttribute('data-carregado') === 'true';
 
         function abrirAba(nomeAba) {
-            // Esconde/Mostra as divs
             document.getElementById('aba_jogos').classList.toggle('hidden', nomeAba !== 'jogos');
             document.getElementById('aba_classificacao').classList.toggle('hidden', nomeAba !== 'classificacao');
 
-            // Atualiza a aparência dos botões
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                // Verifica se o clique foi na aba correspondente (compara ignorando maiúsculas/minúsculas)
                 if (btn.innerText.trim().toLowerCase().includes(nomeAba)) {
                     btn.classList.add('active');
                 } else {
@@ -215,16 +224,14 @@
 
                     if (hs > as) { stats[hPlayer].pts += 3; stats[hPlayer].v++; stats[aPlayer].d++; }
                     else if (hs < as) { stats[aPlayer].pts += 3; stats[aPlayer].v++; stats[hPlayer].d++; }
-                    else { stats[hPlayer].pts += 2; stats[aPlayer].pts += 2; stats[hPlayer].e++; stats[aPlayer].e++; }
+                    else { stats[hPlayer].pts += 1; stats[aPlayer].pts += 1; stats[hPlayer].e++; stats[aPlayer].e++; }
                 }
             });
 
-            // Ordenação: Pontos > Vitórias > Gols Feitos > Gols Tomados (menor)
             let ranking = Object.values(stats).sort((a, b) => {
-                return b.pts - a.pts || b.v - a.v || b.gp - a.gp || a.gc - b.gc;
+                return b.pts - a.pts || b.v - a.v || (b.gp - b.gc) - (a.gp - a.gc) || b.gp - a.gp;
             });
 
-            // Renderizar Tabela
             const tbody = document.getElementById('tabela_body');
             tbody.innerHTML = '';
             ranking.forEach((p, i) => {
@@ -243,46 +250,73 @@
                 `;
             });
 
-            // Verificar Campeão
             const msg = document.getElementById('msg_campeao');
-            const btnFinalizar = document.getElementById('btn_finalizar'); // Pega o botão
+            const btnFinalizar = document.getElementById('btn_finalizar');
 
             if (jogosPreenchidos === rows.length && rows.length > 0) {
                 msg.innerHTML = `🏆 O CAMPEÃO É: <strong>${ranking[0].time} (${ranking[0].nome})</strong>!`;
                 msg.style.display = 'block';
-                btnFinalizar.style.display = 'block'; // MOSTRA o botão finalizar
+                btnFinalizar.style.display = 'block';
             } else {
                 msg.style.display = 'none';
-                btnFinalizar.style.display = 'none'; // ESCONDE se faltar jogo
+                btnFinalizar.style.display = 'none';
             }
         }
-        function salvarTorneio(finalizar) {
-            const nomeTorneio = "{{ torneio }}";
-            const rows = document.querySelectorAll('.jogo-row');
 
-            // Pegar o ranking atual para saber quem é o campeão
-            // (A lógica de ordenação aqui deve ser a mesma da atualizarTabela)
-            let stats = {};
-            playersData.forEach(p => { stats[p.nome] = { nome: p.nome, time: p.time, pts: 0 }; });
-            // ... (lógica simplificada para pegar o líder atual)
+        function salvarTorneio(finalizar) {
+            const rows = document.querySelectorAll('.jogo-row');
+            const jogosParaSalvar = [];
+
+            rows.forEach(row => {
+                jogosParaSalvar.push({
+                    home: {
+                        nome: row.querySelector('.home-score').dataset.player,
+                        time: row.querySelector('.time-box:first-child .time-nome').innerText
+                    },
+                    away: {
+                        nome: row.querySelector('.away-score').dataset.player,
+                        time: row.querySelector('.time-box:last-child .time-nome').innerText
+                    },
+                    gols_h: row.querySelector('.home-score').value,
+                    gols_a: row.querySelector('.away-score').value
+                });
+            });
 
             const dadosParaSalvar = {
-                torneio: nomeTorneio,
+                torneio: "{{ torneio }}",
+                qtd: playersData.length,
+                players: playersData,
+                jogos: jogosParaSalvar,
                 finalizado: finalizar,
-                // Aqui você enviaria os placares e o ranking para o banco de dados futuramente
+                campeao: finalizar ? document.getElementById('msg_campeao').innerText.replace('🏆 O CAMPEÃO É: ', '').replace('!', '') : null
             };
 
-            console.log("Dados enviados:", dadosParaSalvar);
-
-            if (finalizar) {
-                alert("Torneio Finalizado! O campeão foi registrado no histórico.");
-                window.location.href = "{{ url_for('index') }}"; // Volta para o início
-            } else {
-                alert("Progresso salvo com sucesso!");
-            }
+            fetch('/salvar_torneio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosParaSalvar)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "sucesso") {
+                        alert(finalizar ? "Torneio Finalizado e salvo no Histórico!" : "Progresso salvo!");
+                        window.location.href = "{{ url_for('index') }}";
+                    }
+                });
         }
 
-        window.onload = atualizarTabela;
+        window.onload = function () {
+            if (carregado) {
+                const rows = document.querySelectorAll('.jogo-row');
+                rows.forEach((row, index) => {
+                    if (jogosIniciais[index] && jogosIniciais[index].gols_h !== undefined) {
+                        row.querySelector('.home-score').value = jogosIniciais[index].gols_h;
+                        row.querySelector('.away-score').value = jogosIniciais[index].gols_a;
+                    }
+                });
+            }
+            atualizarTabela();
+        };
     </script>
 </body>
 
